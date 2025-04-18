@@ -1,3 +1,9 @@
+/**
+ * Author: Emmanuel Owusu
+ * Project: Public Utility Platform
+ * Date: Jan 2025
+ * Contact: emmanuel.owusu@levincore.cloud
+ */
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, TextInput, Image } from 'react-native';
 import { fetchInvoiceDetails } from '../api/api'; // Assuming your API function is already set up

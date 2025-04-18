@@ -1,3 +1,10 @@
+/**
+ * Author: Emmanuel Owusu
+ * Project: Public Utility Platform
+ * Date: Jan 2025
+ * Contact: emmanuel.owusu@levincore.cloud
+ */
+
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert, ScrollView } from 'react-native';
 

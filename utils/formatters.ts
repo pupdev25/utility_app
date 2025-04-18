@@ -1,3 +1,10 @@
+
+/**
+ * Author: Emmanuel Owusu
+ * Project: Public Utility Platform
+ * Date: Jan 2025
+ * Contact: emmanuel.owusu@levincore.cloud
+ */
 // Format the amount to currency format (GHS)
 export const formatAmount = (amount: number | undefined | null): string => {
     const safeAmount = typeof amount === 'number' ? amount : 0;

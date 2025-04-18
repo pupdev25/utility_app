@@ -1,3 +1,10 @@
+/**
+ * Author: Emmanuel Owusu
+ * Project: Public Utility Platform
+ * Date: Jan 2025
+ * Contact: emmanuel.owusu@levincore.cloud
+ */
+
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
 import { getTransactionList } from '../api/api'; // Define this in your api.ts

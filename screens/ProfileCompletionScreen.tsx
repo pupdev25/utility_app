@@ -1,10 +1,18 @@
+/**
+ * Author: Emmanuel Owusu
+ * Project: Public Utility Platform
+ * Date: Jan 2025
+ * Contact: emmanuel.owusu@levincore.cloud
+ */
 import React, { useEffect, useState, useRef } from 'react';
 import {
   View, Text, TextInput, ScrollView, StyleSheet,
-  Button, Alert, Animated, TouchableOpacity
+  Button, Alert, Animated, TouchableOpacity, Image
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import * as SecureStore from 'expo-secure-store';
+import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import { completeProfile, getDistrictList, getRegions } from '../api/api';
 
 const STORAGE_KEY = 'profile_draft';
@@ -28,6 +36,9 @@ export default function ProfileCompletionScreen({ navigation }: any) {
     business_type: '',
     individual_type: '',
     exemption: '',
+    meter_image: '',
+    location: '',
+    property_account_number: '',
   });
 
   const [districts, setDistricts] = useState<any[]>([]);
@@ -55,17 +66,47 @@ export default function ProfileCompletionScreen({ navigation }: any) {
     SecureStore.setItemAsync(STORAGE_KEY, JSON.stringify(updated));
   };
 
+  const takeMeterPhoto = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (permission.status !== 'granted') {
+      Alert.alert('Permission denied', 'Camera access is needed to take meter photo.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      quality: 0.6,
+      base64: false,
+    });
+
+    if (!result.cancelled) {
+      updateForm('meter_image', result.uri);
+    }
+  };
+
+  const pickLocation = async () => {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission denied', 'Location access is required.');
+      return;
+    }
+
+    const loc = await Location.getCurrentPositionAsync({});
+    const coords = `${loc.coords.latitude},${loc.coords.longitude}`;
+    updateForm('location', coords);
+  };
+
   const handleSubmit = async () => {
     try {
       const phone_number = await SecureStore.getItemAsync('userPhone');
-  
+
       if (!phone_number) {
         Alert.alert('Error', 'Phone number not found.');
         return;
       }
-  
-      const payload = { ...form, phone_number }; // ✅ Add phone to payload
-  
+
+      const payload = { ...form, phone_number };
+
       await completeProfile(payload);
       await SecureStore.deleteItemAsync(STORAGE_KEY);
       Alert.alert('Success', 'Profile completed');
@@ -75,7 +116,6 @@ export default function ProfileCompletionScreen({ navigation }: any) {
       Alert.alert('Error', 'Could not complete profile');
     }
   };
-  
 
   const transitionToStep = (targetStep: number) => {
     Animated.timing(fadeAnim, {
@@ -110,7 +150,6 @@ export default function ProfileCompletionScreen({ navigation }: any) {
       {renderInput("last_name", "Last Name")}
       {renderInput("business_name", "Business Name")}
       {renderInput("registration_no", "Company Reg. No.")}
-      {/* {renderInput("email", "Email")} */}
 
       <Text style={styles.label}>Property User Type</Text>
       <View style={styles.radioGroup}>
@@ -167,6 +206,7 @@ export default function ProfileCompletionScreen({ navigation }: any) {
       <Text style={styles.stepTitle}>Step 2: Address & Utility Info</Text>
       {renderInput("digital_address", "Digital Address")}
       {renderInput("ghana_card_id", "Ghana Card Number")}
+      {renderInput("property_account_number", "Property Rate Account Number")}
 
       <Text style={styles.label}>Region</Text>
       <View style={styles.pickerWrap}>
@@ -175,10 +215,8 @@ export default function ProfileCompletionScreen({ navigation }: any) {
           onValueChange={(val) => updateForm("region", val)}
         >
           <Picker.Item label="Select Region" value="" />
-          {[
-            "Greater Accra", 
-          ].map((region) => (
-            <Picker.Item label={region} value={region} key={region} />
+          {regions.map((region) => (
+            <Picker.Item label={region.name} value={region.name} key={region.id} />
           ))}
         </Picker>
       </View>
@@ -189,12 +227,9 @@ export default function ProfileCompletionScreen({ navigation }: any) {
           selectedValue={form.district}
           onValueChange={(val) => updateForm("district", val)}
         >
-          
           <Picker.Item label="Select District" value="" />
-          {[
-            "Ayawaso West Municipal Assembly", 
-          ].map((district) => (
-            <Picker.Item label={district} value={district} key={district} />
+          {districts.map((district) => (
+            <Picker.Item label={district.name} value={district.name} key={district.id} />
           ))}
         </Picker>
       </View>
@@ -218,6 +253,24 @@ export default function ProfileCompletionScreen({ navigation }: any) {
       {renderInput("no_of_tv", "Number of TV Sets")}
       {renderInput("ecg_meter_number", "ECG Meter Number")}
 
+      <TouchableOpacity style={styles.button} onPress={takeMeterPhoto}>
+        <Text style={styles.buttonText}>
+          {form.meter_image ? 'Retake Meter Photo' : 'Take Meter Photo'}
+        </Text>
+      </TouchableOpacity>
+
+      {form.meter_image !== '' && (
+        <Text style={{ marginTop: 6, color: 'green' }}>✅ Meter photo captured</Text>
+      )}
+
+      <TouchableOpacity style={styles.button} onPress={pickLocation}>
+        <Text style={styles.buttonText}>
+          {form.location ? 'Update Location' : 'Use My Location'}
+        </Text>
+      </TouchableOpacity>
+
+      {form.location && <Text style={{ marginTop: 6, color: 'green' }}>📍 Location set</Text>}
+
       <Text style={styles.label}>Exemption</Text>
       <View style={styles.pickerWrap}>
         <Picker
@@ -239,8 +292,7 @@ export default function ProfileCompletionScreen({ navigation }: any) {
   const renderStep3 = () => (
     <>
       <Text style={styles.stepTitle}>Step 3: Review & Confirm</Text>
-  
-      {/* Personal Info Card */}
+
       <View style={styles.reviewCard}>
         <View style={styles.reviewCardHeader}>
           <Text style={styles.reviewCardTitle}>👤 Personal Info</Text>
@@ -253,7 +305,6 @@ export default function ProfileCompletionScreen({ navigation }: any) {
           ["last_name", "Last Name"],
           ["business_name", "Business Name"],
           ["registration_no", "Company Reg. No."],
-          ["email", "Email"],
           ["property_user_type", "Property User Type"],
           ["business_type", "Business Type"],
           ["individual_type", "Individual Type"],
@@ -264,8 +315,7 @@ export default function ProfileCompletionScreen({ navigation }: any) {
           </View>
         ))}
       </View>
-  
-      {/* Address & Utility Card */}
+
       <View style={styles.reviewCard}>
         <View style={styles.reviewCardHeader}>
           <Text style={styles.reviewCardTitle}>🏠 Address & Utility</Text>
@@ -276,12 +326,14 @@ export default function ProfileCompletionScreen({ navigation }: any) {
         {[
           ["digital_address", "Digital Address"],
           ["ghana_card_id", "Ghana Card Number"],
+          ["property_account_number", "Property Rate Account No."],
           ["region", "Region"],
           ["district", "District"],
           ["type_of_premise", "Type of Premise"],
           ["no_of_tv", "Number of TV Sets"],
           ["ecg_meter_number", "ECG Meter Number"],
           ["exemption", "Exemption"],
+          ["location", "Location Coordinates"],
         ].map(([key, label]) => (
           <View key={key} style={styles.reviewRow}>
             <Text style={styles.reviewLabel}>{label}</Text>
@@ -291,7 +343,6 @@ export default function ProfileCompletionScreen({ navigation }: any) {
       </View>
     </>
   );
-  
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -336,7 +387,7 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#f8f9fc',
     flexGrow: 1,
-    marginTop:50
+    marginTop: 50
   },
   header: {
     fontSize: 24,
@@ -418,6 +469,17 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: '#4e73df',
   },
+  button: {
+    backgroundColor: '#4e73df',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  buttonText: {
+    color: '#fff',
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
   reviewRow: {
     marginBottom: 10,
     borderBottomWidth: 1,
@@ -458,5 +520,4 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 14,
   },
-  
 });

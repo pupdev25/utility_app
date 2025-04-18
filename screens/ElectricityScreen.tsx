@@ -1,15 +1,19 @@
+/**
+ * Author: Emmanuel Owusu
+ * Project: Public Utility Platform
+ * Date: Jan 2025
+ * Contact: emmanuel.owusu@levincore.cloud
+ */
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, Button, StyleSheet, ActivityIndicator, TouchableOpacity, Alert
 } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
-import { getUserArrears } from '../api/api';
 
 export default function ElectricityScreen({ navigation }: any) {
   const [arrears, setArrears] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [overdueMonths, setOverdueMonths] = useState<string[]>([]);
-
 
   useEffect(() => {
     const checkArrears = async () => {
@@ -28,22 +32,18 @@ export default function ElectricityScreen({ navigation }: any) {
         setLoading(false);
       }
     };
-  
+
     checkArrears();
   }, []);
-  
-  const handleAccess = () => {
-    if (arrears > 0) {
-      Alert.alert('Access Blocked', 'Please pay your outstanding district arrears before proceeding.');
-    } else {
-      navigation.navigate('ECGPortal');
-    }
-  };
 
   const handlePayArrears = () => {
     navigation.navigate('ECGPortal', {
       focusArrears: true
     });
+  };
+
+  const handleAccess = () => {
+    navigation.navigate('ECGPortal');
   };
 
   if (loading) {
@@ -57,26 +57,25 @@ export default function ElectricityScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      {arrears > 0 ? (
-  <View style={styles.blockedCard}>
-    <Text style={styles.warningText}>
-      ⚠️ You have GHS {arrears.toFixed(2)} in unpaid property rate invoices
-    </Text>
-    <Text style={styles.instructionText}>Overdue months:</Text>
-    {overdueMonths.map((month, i) => (
-      <Text key={i} style={styles.monthBullet}>• {month}</Text>
-    ))}
-    <TouchableOpacity style={styles.arrearsButton} onPress={handlePayArrears}>
-      <Text style={styles.arrearsButtonText}>Pay Arrears Now</Text>
-    </TouchableOpacity>
-  </View>
-) : (
-  <View style={styles.accessCard}>
-    <Text style={styles.okText}>✅ No arrears found</Text>
-    <Button title="Proceed to ECG Portal" onPress={() => navigation.navigate('ECGPortal')} />
-  </View>
-)}
+       <Text style={styles.header}>My ECG PORTAL</Text>
+      {arrears > 0 && (
+        <View style={styles.reminderCard}>
+          <Text style={styles.warningText}>
+            ⚠️ You have GHS {arrears.toFixed(2)} in unpaid property rate invoices
+          </Text>
+          {overdueMonths.map((month, i) => (
+            <Text key={i} style={styles.monthBullet}>• {month}</Text>
+          ))}
+          <TouchableOpacity style={styles.arrearsButton} onPress={handlePayArrears}>
+            <Text style={styles.arrearsButtonText}>Pay Arrears Now</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
+      <View style={styles.accessCard}>
+        <Text style={styles.okText}>🔌 Access the ECG Portal</Text>
+        <Button title="Proceed to ECG Portal" onPress={handleAccess} />
+      </View>
     </View>
   );
 }
@@ -88,18 +87,26 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
+  header: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#1E2A38',
+    marginBottom: 25,
+    textAlign: 'center',
+  },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  blockedCard: {
+  reminderCard: {
     backgroundColor: '#fff3cd',
     padding: 24,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#ffeeba',
     elevation: 2,
+    marginBottom: 20,
   },
   warningText: {
     color: '#856404',
@@ -124,6 +131,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginBottom: 12,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
   arrearsButton: {
     marginTop: 20,
@@ -143,5 +151,4 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     marginTop: 4,
   },
-  
 });
